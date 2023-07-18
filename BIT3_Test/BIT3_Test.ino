@@ -1,6 +1,8 @@
-/* 各種定数設定 */
-#define toggle_delay 100  // MCP3008 との通信時に送るクロックの周波数に関連:
-#define Sensor_thres 200  // フォトセンサの閾値:
+/* 各種定数を定義 */
+#define toggle_delay         100  // MCP3008 との通信時に送るクロックの周波数に関連:
+#define Sensor_thres         200  // フォトセンサの閾値:
+#define Motor_Voltage_Limit 3000  // モータの最大電圧:
+#define Battery_Cell_count     2  // 使用するバッテリのセル数:
 
 /* 各種 GPIO に名前付け */
 #define LED1 4
@@ -25,7 +27,7 @@
 #define SW_MODE 17
 #define SW_BACK 16
 
-/* ADC のチャンネル設定 */
+/* ADC のチャンネル定義 */
 #define V_Sensor1 4
 #define V_Sensor2 3
 #define V_Sensor3 2
@@ -33,7 +35,7 @@
 #define V_Sensor5 0
 #define V_Battery 7
 
-/* モータドライバのモード設定 */
+/* モータドライバのモード定義 */
 #define IN_IN_MODE        0
 #define PHASE_ENABLE_MODE 1
 
@@ -53,6 +55,7 @@ void debug_ADC(void);                             // ADC の情報を読み取�
 void flash_LED(void);                             // センサの値に応じて LED 光らせるやつ:
 void boot_Motion(void);                           // 起動時の LED 表示をいい感じにするやつ:
 void change_Motor_Voltage(int16_t L, int16_t R);  // モータ回すやつ:
+void check_Battery(void);                         // バッテリ電圧を監視して下限を下回ったら停止させるやつ:
 
 /* ユーザが使用する関数 */
 void run0();
@@ -72,6 +75,9 @@ void run13();
 void run14();
 void run15();
 
+/* ユーザが定義する関数 */
+// あればここに追記してください:
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -89,7 +95,13 @@ void setup() {
 }
 
 void loop() {
-  switch(get_mode_number()) {
+  // check_Battery();
+
+  Serial.print("Please select a mode.\n");
+
+  uint8_t mode = get_mode_number();
+
+  switch(mode) {
     case 0:
       run0();
       break;
@@ -107,6 +119,10 @@ void loop() {
       break;
 
     case 4:
+      run4();
+      break;
+
+    case 5:
       run5();
       break;
 
@@ -149,8 +165,8 @@ void loop() {
     case 15:
       run15();
       break;
+
     default:
-      run0();
       break;
   }
 }
@@ -297,9 +313,7 @@ uint8_t get_mode_number(void) {
     }
     
     /* 現在の num の値を表示 */
-    if(!number_isDetermined) {
-      LED_num((num + 1) << 1);
-    }
+    LED_num((num + 1) << 1);
 
     /* MODE スイッチが押されたら num を加算 */
     if((mode & 0b111) == 0b100) {
@@ -327,22 +341,22 @@ uint8_t get_mode_number(void) {
   sprintf(buffer, "mode%2d\n", num);
   Serial.print(buffer);
 
-  delay(1000);
+  delay(500);
+
+  LED_num(0);
 
   return num;
 }
 
 void debug_ADC(void) {
   static bool isAlreadyRunned = false;
-  if(isAlreadyRunned) {
-    // 何も実行しない:
-  }else {
-    Serial.print("\n\n");
+  if(!isAlreadyRunned) {
+    Serial.print("\n");
     Serial.print("Sensor1, Sensor2, Sensor3, Sensor4, Sensor5, Battery voltage\n");
     Serial.print("------------------------------------------------------------\n");
     isAlreadyRunned = true;
   }
-  char buffer[64];
+  char buffer[32];
   sprintf(buffer, "%7d, %7d, %7d, %7d, %7d, %11f [V]\n", get_Sensor_Level(V_Sensor1),
                                                          get_Sensor_Level(V_Sensor2),
                                                          get_Sensor_Level(V_Sensor3),
@@ -361,64 +375,88 @@ void flash_LED(void) {
 }
 
 void boot_Motion(void) {
-  digitalWrite(LED1, HIGH);
+  digitalWrite(LED1,  LOW);
+  digitalWrite(LED2,  LOW);
+  digitalWrite(LED3,  LOW);
+  digitalWrite(LED4,  LOW);
+  digitalWrite(LED5,  LOW);
+
+  float Vbat = get_Battery_Voltage();
+
+  const float thres1 = 3.1 * Battery_Cell_count;
+  const float thres2 = 3.4 * Battery_Cell_count;
+  const float thres3 = 3.7 * Battery_Cell_count;
+  const float thres4 = 4.0 * Battery_Cell_count;
+
+  digitalWrite(LED1, (Vbat > thres1) ? HIGH : LOW);
   delay(50);
-  digitalWrite(LED2, HIGH);
+  digitalWrite(LED2, (Vbat > thres2) ? HIGH : LOW);
   delay(50);
-  digitalWrite(LED3, HIGH);
+  digitalWrite(LED3, (Vbat > thres3) ? HIGH : LOW);
   delay(50);
-  digitalWrite(LED4, HIGH);
-  delay(50);
-  digitalWrite(LED5, HIGH);
+  digitalWrite(LED4, (Vbat > thres4) ? HIGH : LOW);
   delay(500);
   
   digitalWrite(LED1,  LOW);
-  delay(50);
   digitalWrite(LED2,  LOW);
-  delay(50);
   digitalWrite(LED3,  LOW);
-  delay(50);
   digitalWrite(LED4,  LOW);
-  delay(50);
-  digitalWrite(LED5,  LOW);
   delay(500);
 }
 
 void change_Motor_Voltage(int16_t L, int16_t R) {
-  /* バッテリ電圧を取得。これにより、バッテリ電圧が変動しても指令値と出力電圧の整合性を保てる */
-  float Vbat = get_Battery_Voltage();
-
   int16_t Vmotor_L, Vmotor_R;
+  float Vbat = get_Battery_Voltage();
   
-  Vmotor_L = L / (1000 * 5);
-  Vmotor_R = R / (1000 * 5);
+  Vmotor_L = L;
+  Vmotor_R = R;
+  /*
+  Vmotor_L = L / (Vbat * 65536000);
+  Vmotor_R = R / (Vbat * 65536000);
+   */
+  
+  /* 指令値がリミットを超えたときの処理 */
+  if(Vmotor_L >  Motor_Voltage_Limit) Vmotor_L =  Motor_Voltage_Limit;
+  if(Vmotor_R >  Motor_Voltage_Limit) Vmotor_R =  Motor_Voltage_Limit;
+  if(Vmotor_L < -Motor_Voltage_Limit) Vmotor_L = -Motor_Voltage_Limit;
+  if(Vmotor_R < -Motor_Voltage_Limit) Vmotor_R = -Motor_Voltage_Limit;
+
+  /* モータ電圧指令値のデバッグ */
+  char buffer[32];
+  sprintf(buffer, "Vmotor_L = %4d, Vmotor_R = %4d\n", Vmotor_L, Vmotor_R);
+  Serial.print(buffer);
 
   /* 左側のモータの制御 */
   if(Vmotor_L > 0) {
-    analogWrite(DRV8835_AIN1,  Vmotor_L);
-    analogWrite(DRV8835_AIN2,         0);
+    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2, Vmotor_L);
   }else if(Vmotor_L < 0) {
-    analogWrite(DRV8835_AIN1,         0);
-    analogWrite(DRV8835_AIN2, -Vmotor_L);
+    digitalWrite(DRV8835_AIN1, HIGH); analogWrite(DRV8835_AIN2, Vmotor_L);
   }else if(Vmotor_L == 0) {
-    analogWrite(DRV8835_AIN1,         0);
-    analogWrite(DRV8835_AIN2,         0);
+    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2,        0);
   }
 
   /* 右側のモータの制御 */
   if(Vmotor_R > 0) {
-    analogWrite(DRV8835_BIN1,  Vmotor_R);
-    analogWrite(DRV8835_BIN2,         0);
+    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2, Vmotor_R);
   }else if(Vmotor_R < 0) {
-    analogWrite(DRV8835_BIN1,         0);
-    analogWrite(DRV8835_BIN2, -Vmotor_R);
+    digitalWrite(DRV8835_BIN1, HIGH); analogWrite(DRV8835_BIN2, Vmotor_R);
   }else if(Vmotor_R == 0) {
-    analogWrite(DRV8835_BIN1,         0);
-    analogWrite(DRV8835_BIN2,         0);
+    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2,        0);
   }
 }
 
-void run0() {  // ADC デバッグ
+void check_Battery(void) {
+  float Vbat = get_Battery_Voltage();
+  const float thres = 3.0 * Battery_Cell_count;
+  while(Vbat < thres) {
+    LED_num(31);
+    delay(50);
+    LED_num(0);
+    delay(50);
+  }
+}
+
+void run0() {  // ADC デバッグ:
   while(true) {
   debug_ADC();
   flash_LED();
@@ -426,7 +464,44 @@ void run0() {  // ADC デバッグ
   }
 }
 
-void run1() {
+void run1() {  // モータのテスト:
+  Serial.print("Both Motor Test Start.\n");
+  for(int16_t i = 0; i <= 3000; i += 10) {
+    change_Motor_Voltage(i, i);
+    Serial.print("Motor Voltage = ");
+    Serial.print(i);
+    Serial.print("\n");
+    delay(50);
+  }
+
+  change_Motor_Voltage(0, 0);
+  delay(1000);
+
+  Serial.print("L Motor Test Start.\n");
+  for(int16_t i = 0; i <= 3000; i += 10) {
+    change_Motor_Voltage(i, 0);
+    Serial.print("Motor Voltage = ");
+    Serial.print(i);
+    Serial.print("\n");
+    delay(50);
+  }
+
+  change_Motor_Voltage(0, 0);
+  delay(1000);
+
+  Serial.print("R Motor Test Start.\n");
+  for(int16_t i = 0; i <= 3000; i += 10) {
+    change_Motor_Voltage(0, i);
+    Serial.print("Motor Voltage = ");
+    Serial.print(i);
+    Serial.print("\n");
+    delay(50);
+  }
+
+  change_Motor_Voltage(0, 0);
+  delay(1000);
+
+  Serial.print("Motor Test end.\n");
 }
 
 void run2() {
@@ -469,4 +544,37 @@ void run14() {
 }
 
 void run15() {
+  while(true){
+         if(V_Sensor1  > Sensor_thres && V_Sensor2  > Sensor_thres && V_Sensor3  > Sensor_thres && V_Sensor4  > Sensor_thres){  //○○○○
+      change_Motor_Voltage(800,800);
+    }
+    else if(V_Sensor1  > Sensor_thres && V_Sensor2 <= Sensor_thres && V_Sensor3 <= Sensor_thres && V_Sensor4 <= Sensor_thres){  //○×××
+      change_Motor_Voltage(400,1200);
+    }
+    else if(V_Sensor1  > Sensor_thres && V_Sensor2  > Sensor_thres && V_Sensor3 <= Sensor_thres && V_Sensor4 <= Sensor_thres){  //○○××
+      change_Motor_Voltage(600,1000);
+    }
+    else if(V_Sensor1 <= Sensor_thres && V_Sensor2  > Sensor_thres && V_Sensor3 <= Sensor_thres && V_Sensor4 <= Sensor_thres){  //×○××
+      change_Motor_Voltage(700,900);
+    }
+    else if(V_Sensor1 <= Sensor_thres && V_Sensor2  > Sensor_thres && V_Sensor3  > Sensor_thres && V_Sensor4 <= Sensor_thres){  //×○○×
+      change_Motor_Voltage(800,800);
+    }
+    else if(V_Sensor1 <= Sensor_thres && V_Sensor2 <= Sensor_thres && V_Sensor3  > Sensor_thres && V_Sensor4 <= Sensor_thres){  //××○×
+      change_Motor_Voltage(900,700);
+    }
+    else if(V_Sensor1 <= Sensor_thres && V_Sensor2 <= Sensor_thres && V_Sensor3  > Sensor_thres && V_Sensor4  > Sensor_thres){  //××○○
+      change_Motor_Voltage(1000,600);
+    }
+    else if(V_Sensor1 <= Sensor_thres && V_Sensor2 <= Sensor_thres && V_Sensor3 <= Sensor_thres && V_Sensor4  > Sensor_thres){  //×××○
+      change_Motor_Voltage(1200,400);
+    }
+    else{
+      change_Motor_Voltage(800,800);
+    }
+
+    flash_LED();
+
+    delay(25);
+  }
 }
