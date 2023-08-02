@@ -1,6 +1,6 @@
 /* 各種定数を定義 */
 #define toggle_delay         100  // MCP3008 との通信時に送るクロックの周波数に関連:
-#define Sensor_thres         200  // フォトセンサの閾値:
+#define Sensor_thres         500  // フォトセンサの閾値:
 #define Motor_Voltage_Limit 3000  // モータの最大電圧:
 #define Battery_Cell_count     2  // 使用するバッテリのセル数:
 
@@ -38,6 +38,9 @@
 /* モータドライバのモード定義 */
 #define IN_IN_MODE        0
 #define PHASE_ENABLE_MODE 1
+
+/* 速度に関わる係数 */
+#define Speed 50
 
 /* 関数のプロトタイプ宣言 */
 void LED_init(void);                              // LED を使えるようにするやつ:
@@ -556,31 +559,31 @@ void run15() {
     uint16_t Sensor4 = get_Sensor_Level(ch_Sensor4);
 
          if(Sensor1  > Sensor_thres && Sensor2  > Sensor_thres && Sensor3  > Sensor_thres && Sensor4  > Sensor_thres){  //○○○○
-      change_Motor_Voltage(800,800);
+      change_Motor_Voltage( 8 * Speed,  8 * Speed);
     }
     else if(Sensor1  > Sensor_thres && Sensor2 <= Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //○×××
-      change_Motor_Voltage(400,1200);
+      change_Motor_Voltage( 4 * Speed, 12 * Speed);
     }
     else if(Sensor1  > Sensor_thres && Sensor2  > Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //○○××
-      change_Motor_Voltage(600,1000);
+      change_Motor_Voltage( 6 * Speed, 10 * Speed);
     }
     else if(Sensor1 <= Sensor_thres && Sensor2  > Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //×○××
-      change_Motor_Voltage(700,900);
+      change_Motor_Voltage( 7 * Speed,  9 * Speed);
     }
     else if(Sensor1 <= Sensor_thres && Sensor2  > Sensor_thres && Sensor3  > Sensor_thres && Sensor4 <= Sensor_thres){  //×○○×
-      change_Motor_Voltage(800,800);
+      change_Motor_Voltage( 8 * Speed,  8 * Speed);
     }
     else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3  > Sensor_thres && Sensor4 <= Sensor_thres){  //××○×
-      change_Motor_Voltage(900,700);
+      change_Motor_Voltage( 9 * Speed,  7 * Speed);
     }
     else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3  > Sensor_thres && Sensor4  > Sensor_thres){  //××○○
-      change_Motor_Voltage(1000,600);
+      change_Motor_Voltage(10 * Speed,  6 * Speed);
     }
     else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3 <= Sensor_thres && Sensor4  > Sensor_thres){  //×××○
-      change_Motor_Voltage(1200,400);
+      change_Motor_Voltage(12 * Speed,  4 * Speed);
     }
     else{
-      change_Motor_Voltage(800,800);
+      change_Motor_Voltage( 8 * Speed,  8 * Speed);
     }
 
     flash_LED();
