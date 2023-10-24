@@ -1,6 +1,10 @@
 /* 各種定数を定義 */
 #define toggle_delay         100  // MCP3008 との通信時に送るクロックの周波数に関連:
-#define Sensor_thres         500  // フォトセンサの閾値:
+#define Sensor_thres_1       650  // フォトセンサ1の閾値:
+#define Sensor_thres_2       200  // フォトセンサ2の閾値:
+#define Sensor_thres_3       600  // フォトセンサ3の閾値:
+#define Sensor_thres_4       650  // フォトセンサ4の閾値:
+#define Sensor_thres_5       250  // フォトセンサ5の閾値:
 #define Motor_Voltage_Limit 3000  // モータの最大電圧:
 #define Battery_Cell_count     2  // 使用するバッテリのセル数:
 
@@ -40,25 +44,25 @@
 #define PHASE_ENABLE_MODE 1
 
 /* 速度に関わる係数 */
-#define Speed 50
+#define Speed 75
 
 /* 関数のプロトタイプ宣言 */
-void LED_init(void);                              // LED を使えるようにするやつ:
-void ADC_init(void);                              // ADC を使えるようにするやつ:
-void IR_init(void);                               // 赤外線 LED を使えるようにするやつ:
-void Motor_init(uint8_t mode);                    // モタドラを使えるようにするやつ:
-void SW_init(void);                               // スイッチを使えるようにするやつ:
-void LED_num(uint8_t num);                        // 数字を指定してバイナリで表示するやつ:
-uint16_t ADC_Read(uint8_t ch);                    // チャンネルを指定して ADC 読むやつ:
-void toggle(void);                                // GPIO をただトグルさせるだけのやつ:
-float get_Battery_Voltage(void);                  // バッテリの電圧を取得するやつ:
-int16_t get_Sensor_Level(uint8_t ch);             // LED を点滅させながら差分を取得し返すやつ:
-uint8_t get_mode_number(void);                    // スイッチで選択したモードを取得するやつ:
-void debug_ADC(void);                             // ADC の情報を読み取りシリアルに表示するやつ:
-void flash_LED(void);                             // センサの値に応じて LED 光らせるやつ:
-void boot_Motion(void);                           // 起動時の LED 表示をいい感じにするやつ:
-void change_Motor_Voltage(int16_t L, int16_t R);  // モータ回すやつ:
-void check_Battery(void);                         // バッテリ電圧を監視して下限を下回ったら停止させるやつ:
+void LED_init(void);                          // LED を使えるようにするやつ:
+void ADC_init(void);                          // ADC を使えるようにするやつ:
+void IR_init(void);                           // 赤外線 LED を使えるようにするやつ:
+void Motor_init(uint8_t);                     // モタドラを使えるようにするやつ:
+void SW_init(void);                           // スイッチを使えるようにするやつ:
+void LED_num(uint8_t);                        // 数字を指定してバイナリで表示するやつ:
+uint16_t ADC_Read(uint8_t);                   // チャンネルを指定して ADC 読むやつ:
+void toggle(void);                            // GPIO をただトグルさせるだけのやつ:
+float get_Battery_Voltage(void);              // バッテリの電圧を取得するやつ:
+int16_t get_Sensor_Level(uint8_t);            // LED を点滅させながら差分を取得し返すやつ:
+uint8_t get_mode_number(void);                // スイッチで選択したモードを取得するやつ:
+void debug_ADC(void);                         // ADC の情報を読み取りシリアルに表示するやつ:
+void flash_LED(void);                         // センサの値に応じて LED 光らせるやつ:
+void boot_Motion(void);                       // 起動時の LED 表示をいい感じにするやつ:
+void change_Motor_Voltage(int16_t, int16_t);  // モータ回すやつ:
+void check_Battery(void);                     // バッテリ電圧を監視して下限を下回ったら停止させるやつ:
 
 /* ユーザが使用する関数 */
 void run0();
@@ -79,7 +83,7 @@ void run14();
 void run15();
 
 /* ユーザが定義する関数 */
-// あればここに追記してください:
+
 
 void setup() {
   Serial.begin(115200);
@@ -367,11 +371,11 @@ void debug_ADC(void) {
 }
 
 void flash_LED(void) {
-  digitalWrite(LED1, (get_Sensor_Level(ch_Sensor1) > Sensor_thres) ? HIGH : LOW);
-  digitalWrite(LED2, (get_Sensor_Level(ch_Sensor2) > Sensor_thres) ? HIGH : LOW);
-  digitalWrite(LED3, (get_Sensor_Level(ch_Sensor3) > Sensor_thres) ? HIGH : LOW);
-  digitalWrite(LED4, (get_Sensor_Level(ch_Sensor4) > Sensor_thres) ? HIGH : LOW);
-  digitalWrite(LED5, (get_Sensor_Level(ch_Sensor5) > Sensor_thres) ? HIGH : LOW);
+  digitalWrite(LED1, (get_Sensor_Level(ch_Sensor1) > Sensor_thres_1) ? HIGH : LOW);
+  digitalWrite(LED2, (get_Sensor_Level(ch_Sensor2) > Sensor_thres_2) ? HIGH : LOW);
+  digitalWrite(LED3, (get_Sensor_Level(ch_Sensor3) > Sensor_thres_3) ? HIGH : LOW);
+  digitalWrite(LED4, (get_Sensor_Level(ch_Sensor4) > Sensor_thres_4) ? HIGH : LOW);
+  digitalWrite(LED5, (get_Sensor_Level(ch_Sensor5) > Sensor_thres_5) ? HIGH : LOW);
 }
 
 void boot_Motion(void) {
@@ -401,7 +405,7 @@ void boot_Motion(void) {
   digitalWrite(LED2,  LOW);
   digitalWrite(LED3,  LOW);
   digitalWrite(LED4,  LOW);
-  delay(500);
+  delay(100);
 }
 
 void change_Motor_Voltage(int16_t L, int16_t R) {
@@ -558,29 +562,29 @@ void run15() {
     uint16_t Sensor3 = get_Sensor_Level(ch_Sensor3);
     uint16_t Sensor4 = get_Sensor_Level(ch_Sensor4);
 
-         if(Sensor1  > Sensor_thres && Sensor2  > Sensor_thres && Sensor3  > Sensor_thres && Sensor4  > Sensor_thres){  //○○○○
+         if(Sensor1  > Sensor_thres_1 && Sensor2  > Sensor_thres_2 && Sensor3  > Sensor_thres_3 && Sensor4  > Sensor_thres_4){  //○○○○
       change_Motor_Voltage( 8 * Speed,  8 * Speed);
     }
-    else if(Sensor1  > Sensor_thres && Sensor2 <= Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //○×××
-      change_Motor_Voltage( 4 * Speed, 12 * Speed);
+    else if(Sensor1  > Sensor_thres_1 && Sensor2 <= Sensor_thres_2 && Sensor3 <= Sensor_thres_3 && Sensor4 <= Sensor_thres_4){  //○×××
+      change_Motor_Voltage( 3 * Speed, 12 * Speed);
     }
-    else if(Sensor1  > Sensor_thres && Sensor2  > Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //○○××
-      change_Motor_Voltage( 6 * Speed, 10 * Speed);
+    else if(Sensor1  > Sensor_thres_1 && Sensor2  > Sensor_thres_2 && Sensor3 <= Sensor_thres_3 && Sensor4 <= Sensor_thres_4){  //○○××
+      change_Motor_Voltage( 5 * Speed,  8 * Speed);
     }
-    else if(Sensor1 <= Sensor_thres && Sensor2  > Sensor_thres && Sensor3 <= Sensor_thres && Sensor4 <= Sensor_thres){  //×○××
+    else if(Sensor1 <= Sensor_thres_1 && Sensor2  > Sensor_thres_2 && Sensor3 <= Sensor_thres_3 && Sensor4 <= Sensor_thres_4){  //×○××
       change_Motor_Voltage( 7 * Speed,  9 * Speed);
     }
-    else if(Sensor1 <= Sensor_thres && Sensor2  > Sensor_thres && Sensor3  > Sensor_thres && Sensor4 <= Sensor_thres){  //×○○×
+    else if(Sensor1 <= Sensor_thres_1 && Sensor2  > Sensor_thres_2 && Sensor3  > Sensor_thres_3 && Sensor4 <= Sensor_thres_4){  //×○○×
       change_Motor_Voltage( 8 * Speed,  8 * Speed);
     }
-    else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3  > Sensor_thres && Sensor4 <= Sensor_thres){  //××○×
+    else if(Sensor1 <= Sensor_thres_1 && Sensor2 <= Sensor_thres_2 && Sensor3  > Sensor_thres_3 && Sensor4 <= Sensor_thres_4){  //××○×
       change_Motor_Voltage( 9 * Speed,  7 * Speed);
     }
-    else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3  > Sensor_thres && Sensor4  > Sensor_thres){  //××○○
-      change_Motor_Voltage(10 * Speed,  6 * Speed);
+    else if(Sensor1 <= Sensor_thres_1 && Sensor2 <= Sensor_thres_2 && Sensor3  > Sensor_thres_3 && Sensor4  > Sensor_thres_4){  //××○○
+      change_Motor_Voltage( 8 * Speed,  5 * Speed);
     }
-    else if(Sensor1 <= Sensor_thres && Sensor2 <= Sensor_thres && Sensor3 <= Sensor_thres && Sensor4  > Sensor_thres){  //×××○
-      change_Motor_Voltage(12 * Speed,  4 * Speed);
+    else if(Sensor1 <= Sensor_thres_1 && Sensor2 <= Sensor_thres_2 && Sensor3 <= Sensor_thres_3 && Sensor4  > Sensor_thres_4){  //×××○
+      change_Motor_Voltage(12 * Speed,  3 * Speed);
     }
     else{
       change_Motor_Voltage( 8 * Speed,  8 * Speed);
