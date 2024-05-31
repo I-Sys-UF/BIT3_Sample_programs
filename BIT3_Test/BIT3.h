@@ -331,20 +331,20 @@ void change_motor_voltage(int16_t L, int16_t R) {
 
   /* 左側のモータの制御 */
   if(Vmotor_L > 0) {
-    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2, Vmotor_L);
+    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2,  Vmotor_L);
   }else if(Vmotor_L < 0) {
-    digitalWrite(DRV8835_AIN1, HIGH); analogWrite(DRV8835_AIN2, Vmotor_L);
+    digitalWrite(DRV8835_AIN1, HIGH); analogWrite(DRV8835_AIN2, -Vmotor_L);
   }else if(Vmotor_L == 0) {
-    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2,        0);
+    digitalWrite(DRV8835_AIN1,  LOW); analogWrite(DRV8835_AIN2,         0);
   }
 
   /* 右側のモータの制御 */
   if(Vmotor_R > 0) {
-    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2, Vmotor_R);
+    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2, -Vmotor_R);
   }else if(Vmotor_R < 0) {
-    digitalWrite(DRV8835_BIN1, HIGH); analogWrite(DRV8835_BIN2, Vmotor_R);
+    digitalWrite(DRV8835_BIN1, HIGH); analogWrite(DRV8835_BIN2,  Vmotor_R);
   }else if(Vmotor_R == 0) {
-    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2,        0);
+    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2,         0);
   }
 
   /* モータ電圧指令値のデバッグ */
