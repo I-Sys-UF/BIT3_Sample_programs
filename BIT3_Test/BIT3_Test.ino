@@ -1,5 +1,14 @@
 #include "BIT3.h"
 
+/* タイマー割り込み用 */
+struct repeating_timer st_timer;
+
+/* 割り込み関数 */
+bool Timer(struct repeating_timer *t) {
+  check_battery();
+  return true;
+}
+
 /* ユーザが定義する関数のプロトタイプ宣言 */
 
 
@@ -17,11 +26,11 @@ void setup() {
   delay(125);
   boot_motion();
   delay(125);
+
+  add_repeating_timer_us(1000000, Timer, NULL, &st_timer);
 }
 
 void loop() {
-  check_battery();
-
   Serial.print("Please select a mode.\n");
 
   uint8_t mode = get_mode_number();
