@@ -27,7 +27,7 @@ void setup() {
   boot_motion();
   delay(125);
 
-  add_repeating_timer_us(1000000, Timer, NULL, &st_timer);
+  add_repeating_timer_us(10000, Timer, NULL, &st_timer);
 }
 
 void loop() {
