@@ -354,9 +354,16 @@ void change_motor_voltage(int16_t L, int16_t R) {
 }
 
 void check_battery(void) {
+  static int16_t count = 0;
   float Vbat = get_battery_voltage();
   const float thres = 3.0 * battery_Cell_count;
-  while(Vbat < thres) {
+  if(Vbat < thres) {
+    count += 1;
+  }else {
+    count = 0;
+  }
+
+  while(count > 100) {
     LED_num(31);
     delay(50);
     LED_num(0);
