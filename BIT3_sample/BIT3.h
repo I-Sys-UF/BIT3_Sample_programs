@@ -371,9 +371,9 @@ void change_motor_voltage(int16_t L, int16_t R) {
 
   /* 右側のモータの制御 */
   if(Vmotor_R > 0) {
-    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2, -Vmotor_R);
+    digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2,  Vmotor_R);
   }else if(Vmotor_R < 0) {
-    digitalWrite(DRV8835_BIN1, HIGH); analogWrite(DRV8835_BIN2,  Vmotor_R);
+    digitalWrite(DRV8835_BIN1, HIGH); analogWrite(DRV8835_BIN2, -Vmotor_R);
   }else if(Vmotor_R == 0) {
     digitalWrite(DRV8835_BIN1,  LOW); analogWrite(DRV8835_BIN2,         0);
   }
